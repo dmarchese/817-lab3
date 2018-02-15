@@ -9,7 +9,7 @@ package pkg817.exercise1;
  *
  * @author domenic
  */
-public class Exercise1 {
+public class JEncrypDES {
 
     /**
      * @param args the command line arguments
