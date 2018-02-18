@@ -43,9 +43,9 @@ public class JEncryptDES {
         {
             JEncryptDES DES = new JEncryptDES();
 
-            String encryptedMessage = DES.encodeMessage(input);
-            System.out.println("Encrypted message: " + encryptedMessage);
-            System.out.println("Decrypted message: " + DES.decodeMessage(encryptedMessage));
+            //String encryptedMessage = DES.encodeMessage(input);
+            //System.out.println("Encrypted message: " + encryptedMessage);
+            //System.out.println("Decrypted message: " + DES.decodeMessage(encryptedMessage));
         }
         catch(NoSuchAlgorithmException | NoSuchPaddingException e)
         {
@@ -53,13 +53,15 @@ public class JEncryptDES {
         }
     }
     
-    public String decodeMessage(String message) {
+    public String decodeMessage(String message,SecretKey key) {
         String decryptedMessage = null;
         try
-        {
-            desCipher.init(Cipher.DECRYPT_MODE, desKey);
+        {         
+            System.out.println("decode key: "+key);
+            desCipher.init(Cipher.DECRYPT_MODE, key);
             byte[] encryptedTextByte = decoder.decode(message);
-            byte[] decryptedByte = desCipher.doFinal(encryptedTextByte);
+            byte[] someData = desCipher.update(encryptedTextByte);
+            byte[] decryptedByte = desCipher.doFinal();
             String decryptedText = new String(decryptedByte);
             decryptedMessage = decryptedText;
         }
@@ -70,12 +72,15 @@ public class JEncryptDES {
         return decryptedMessage;
     }
     
-    public String encodeMessage(String message){
+    public String encodeMessage(String message,SecretKey key){
         String encryptedText = null;
         try
         {
-            desCipher.init(Cipher.ENCRYPT_MODE, desKey);
-            byte[] encryptedMessage = desCipher.doFinal(message.getBytes());
+            //desCipher.getClass()
+            System.out.println("encode key: "+key);
+            desCipher.init(Cipher.ENCRYPT_MODE, key);
+            byte[] someData = desCipher.update(message.getBytes());
+            byte[] encryptedMessage = desCipher.doFinal();
             encryptedText = encoder.encodeToString(encryptedMessage);
         }
         catch(InvalidKeyException | BadPaddingException | IllegalBlockSizeException e)

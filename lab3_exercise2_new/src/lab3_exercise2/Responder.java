@@ -5,7 +5,8 @@ import java.net.*;
 import java.security.*;
 import javax.crypto.*;
 import java.util.Scanner;
-
+import java.util.Base64;
+import javax.crypto.spec.SecretKeySpec;
 /**
  *
  * @author brentmarks
@@ -68,7 +69,15 @@ public class Responder extends Thread // server
                 try 
                 {
                     String recievedMessage = reader.readLine();
-                    System.out.println("Recieved Message: " + recievedMessage);
+                    System.out.println(recievedMessage);
+                    String[] splitString = recievedMessage.split("/");
+                    //String decodedMessage = DESCipher.decodeMessage(recievedMessage,desKey);
+                    System.out.println("Recieved Message: " + splitString[0]);
+                    System.out.println("Key Message: " + splitString[1]);
+                    byte[] decodedKey = Base64.getDecoder().decode(splitString[1]);
+                    SecretKey originalKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "DES");
+                    String outMessage = DESCipher.decodeMessage(splitString[0],originalKey );
+                    System.out.println("Decoded Message: " + outMessage);
                 } 
                 catch (IOException e) 
                 {
@@ -84,8 +93,8 @@ public class Responder extends Thread // server
                 try 
                 {
                     String message = chatMessageSC.nextLine();
-                    String encodedMessage = DESCipher.encodeMessage(message);
-                    writer.write(encodedMessage);
+                    //String encodedMessage = DESCipher.encodeMessage(message);
+                    writer.write(message);
                     writer.newLine();
                     writer.flush();
                 } 

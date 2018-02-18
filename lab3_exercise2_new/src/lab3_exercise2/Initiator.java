@@ -5,6 +5,7 @@ import java.net.*;
 import java.security.*;
 import javax.crypto.*;
 import java.util.Scanner;
+import java.util.Base64;
 
 /**
  *
@@ -46,7 +47,7 @@ public class Initiator extends Thread // Client
     // This acts as A
     @Override
     public void run() {
-        System.out.println("Initiator");
+        System.out.println("Initiator");     
         try
         {
             inSR = new InputStreamReader(socket.getInputStream());
@@ -65,12 +66,13 @@ public class Initiator extends Thread // Client
             {
                 try 
                 {   
+                    /*
                     String recievedMessage = reader.readLine();
-                    String decodedMessage = DESCipher.decodeMessage(recievedMessage);
+                    String decodedMessage = DESCipher.decodeMessage(recievedMessage,desKey);
                     System.out.println("Recieved Message: " + recievedMessage);
-                    System.out.println("Decoded Message: " + decodedMessage);
+                    System.out.println("Decoded Message: " + decodedMessage);*/
                 } 
-                catch (IOException e) 
+                catch (Exception e) 
                 {
                     System.out.println("Error: " + e);
                 }
@@ -84,11 +86,16 @@ public class Initiator extends Thread // Client
                 try 
                 {
                     String message = chatMessageSC.nextLine();
-                    writer.write(message);
+                    KeyGenerator DESkeyGen = KeyGenerator.getInstance("DES");
+                    SecretKey desKey = DESkeyGen.generateKey();
+                    
+                    String encodedKey = Base64.getEncoder().encodeToString(desKey.getEncoded());
+                    String finalMessage = DESCipher.encodeMessage(message, desKey);
+                    writer.write(finalMessage+"/"+encodedKey);
                     writer.newLine();
                     writer.flush();
                 } 
-                catch (IOException e) 
+                catch (NoSuchAlgorithmException|IOException e) 
                 {
                     System.out.println("Error: " + e);
                 }
