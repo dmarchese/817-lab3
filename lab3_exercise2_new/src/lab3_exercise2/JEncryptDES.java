@@ -89,4 +89,25 @@ public class JEncryptDES {
         }
         return encryptedText;
     }
+    
+    public static KeyPair getKeyPair() throws NoSuchAlgorithmException {
+        final int keySize = 512;
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(keySize);      
+        return keyPairGenerator.genKeyPair();
+    }
+    
+    public static byte[] encode(PublicKey publicKey, String message) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA");  
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);  
+
+        return cipher.doFinal(message.getBytes());  
+    }
+    
+    public static byte[] decode(PrivateKey privateKey, byte [] encryptedText) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA");  
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        
+        return cipher.doFinal(encryptedText);
+    }
 }

@@ -3,9 +3,12 @@ package lab3_exercise2;
 import java.io.*;
 import java.net.*;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.*;
 import java.util.Scanner;
 import java.util.Base64;
+import java.util.Date;
 import javax.crypto.spec.SecretKeySpec;
 /**
  *
@@ -24,6 +27,8 @@ public class Responder extends Thread // server
     
     boolean run;
     Scanner chatMessageSC;
+    
+    SecretKey Ks;
     
     public Responder(int port) throws NoSuchAlgorithmException, NoSuchPaddingException{
         socket = setupSocket(port);
@@ -63,21 +68,45 @@ public class Responder extends Thread // server
             System.out.println("Error: " + e);
         }
         
+            try
+            {
+                //Initial Key distribution for B
+                String[] initMessage = reader.readLine().split(" ");
+                System.out.println("A's public key: "+initMessage[0]);
+                System.out.println("A's ID: "+initMessage[1]);
+                
+                KeyPair initKeys = DESCipher.getKeyPair();
+                String encodedKey = Base64.getEncoder().encodeToString(initKeys.getPrivate().getEncoded());
+                byte[] decodedKey = Base64.getDecoder().decode(initMessage[0]);
+                
+                X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decodedKey);
+                KeyFactory keyFact = KeyFactory.getInstance("RSA");
+                PublicKey pubKey = keyFact.generatePublic(keySpec);
+                
+                KeyGenerator DESkeyGen = KeyGenerator.getInstance("DES");
+                Ks = DESkeyGen.generateKey();
+                String encodedSecKey = Base64.getEncoder().encodeToString(Ks.getEncoded());
+                byte[] priKeyEncoded = DESCipher.encode(pubKey,encodedSecKey);//encodedKey is too long
+                System.out.println("private key to send: "+priKeyEncoded.toString());
+                writer.write(priKeyEncoded.toString());
+                writer.newLine();
+                writer.flush();
+                
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+                System.out.println("Error: "+ e.getLocalizedMessage());
+            }
+        
         Thread reciever = new Thread(() -> {
             while(run)
             {
                 try 
                 {
-                    String recievedMessage = reader.readLine();
-                    System.out.println(recievedMessage);
-                    String[] splitString = recievedMessage.split("/");
-                    //String decodedMessage = DESCipher.decodeMessage(recievedMessage,desKey);
-                    System.out.println("Recieved Message: " + splitString[0]);
-                    System.out.println("Key Message: " + splitString[1]);
-                    byte[] decodedKey = Base64.getDecoder().decode(splitString[1]);
-                    SecretKey originalKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "DES");
-                    String outMessage = DESCipher.decodeMessage(splitString[0],originalKey );
-                    System.out.println("Decoded Message: " + outMessage);
+                    String recievedMessage = reader.readLine();  
+                    String outMessage = DESCipher.decodeMessage(recievedMessage,Ks);
+                    System.out.println("Decoded Message: " + outMessage + " (received at: "+new Date()+")");
                 } 
                 catch (IOException e) 
                 {
@@ -93,8 +122,8 @@ public class Responder extends Thread // server
                 try 
                 {
                     String message = chatMessageSC.nextLine();
-                    //String encodedMessage = DESCipher.encodeMessage(message);
-                    writer.write(message);
+                    String finalMessage = DESCipher.encodeMessage(message, Ks);
+                    writer.write(finalMessage);
                     writer.newLine();
                     writer.flush();
                 } 
