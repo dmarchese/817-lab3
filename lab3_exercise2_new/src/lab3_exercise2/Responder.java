@@ -7,6 +7,7 @@ import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.*;
 import java.util.Scanner;
 import java.util.Base64;
+import java.util.Calendar;
 import java.util.Date;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Random;
@@ -145,8 +146,16 @@ public class Responder extends Thread // server
                 try 
                 {
                     String recievedMessage = reader.readLine();  
-                    String outMessage = DESCipher.decodeMessage(recievedMessage,Ks);
-                    System.out.println("Decoded Message: " + outMessage + " (received at: "+new Date()+")");
+                    String outMessage = DESCipher.decodeMessage(recievedMessage, Ks);
+                    
+                    String[] messageParts = outMessage.split("~");
+                    String message = messageParts[0];
+                    long timeStamp = Long.parseLong(messageParts[1]);
+                    
+                    long current = new Date().getTime();
+                    if(current - timeStamp < 1000){
+                        System.out.println("Decoded Message: " + message);
+                    }
                 } 
                 catch (IOException e) 
                 {
@@ -162,7 +171,8 @@ public class Responder extends Thread // server
                 try 
                 {
                     String message = chatMessageSC.nextLine();
-                    String finalMessage = DESCipher.encodeMessage(message, Ks);
+                    String messageWithTime = message + "~" + new Date().getTime();
+                    String finalMessage = DESCipher.encodeMessage(messageWithTime, Ks);
                     writer.write(finalMessage);
                     writer.newLine();
                     writer.flush();

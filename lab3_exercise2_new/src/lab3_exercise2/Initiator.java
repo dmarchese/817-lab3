@@ -154,8 +154,16 @@ public class Initiator extends Thread // Client
                 try 
                 {   
                     String recievedMessage = reader.readLine();  
-                    String outMessage = DESCipher.decodeMessage(recievedMessage,Ks);
-                    System.out.println("Decoded Message: " + outMessage + " (received at: "+new Date()+")");
+                    String outMessage = DESCipher.decodeMessage(recievedMessage, Ks);
+                    
+                    String[] messageParts = outMessage.split("~");
+                    String message = messageParts[0];
+                    long timeStamp = Long.parseLong(messageParts[1]);
+                    
+                    long current = new Date().getTime();
+                    if(current - timeStamp < 1000){
+                        System.out.println("Decoded Message: " + message);
+                    }
                 } 
                 catch (IOException e) 
                 {
@@ -171,7 +179,8 @@ public class Initiator extends Thread // Client
                 try 
                 {
                     String message = chatMessageSC.nextLine();
-                    String finalMessage = DESCipher.encodeMessage(message, Ks);
+                    String messageWithTime = message + "~" + new Date().getTime();
+                    String finalMessage = DESCipher.encodeMessage(messageWithTime, Ks);
                     writer.write(finalMessage);
                     writer.newLine();
                     writer.flush();
