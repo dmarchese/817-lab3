@@ -53,8 +53,7 @@ public class JEncrypRSA {
 
     public String encode(PublicKey publicKey, String message) throws Exception {
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        byte[] someData = cipher.update(message.getBytes());
-        byte[] encodedTextBytes = cipher.doFinal();
+        byte[] encodedTextBytes = cipher.doFinal(message.getBytes());
         String encodedText = encoder.encodeToString(encodedTextBytes);
         return encodedText;
     }

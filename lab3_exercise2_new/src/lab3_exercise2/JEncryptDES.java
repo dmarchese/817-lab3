@@ -1,7 +1,6 @@
 package lab3_exercise2;
 
 import java.security.*;
-import java.util.Scanner;
 import javax.crypto.*;
 import java.util.Base64;
 
@@ -11,8 +10,6 @@ import java.util.Base64;
  */
 public class JEncryptDES {
 
-    private final KeyGenerator DESkeyGen;
-    private final SecretKey desKey;
     private final Cipher desCipher;
     private final Base64.Decoder decoder;
     private final Base64.Encoder encoder;
@@ -20,8 +17,6 @@ public class JEncryptDES {
     private static JEncryptDES instance = null;
 
     private JEncryptDES() throws NoSuchAlgorithmException, NoSuchPaddingException {
-        DESkeyGen = KeyGenerator.getInstance("DES");
-        desKey = DESkeyGen.generateKey();
         desCipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
         decoder = Base64.getDecoder();
         encoder = Base64.getEncoder();
@@ -34,33 +29,13 @@ public class JEncryptDES {
       return instance;
     }
     
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        System.out.println("Please enter this message (No body can see me)");
-        String input = sc.nextLine();
-        
-        try
-        {
-            JEncryptDES DES = new JEncryptDES();
-
-            //String encryptedMessage = DES.encodeMessage(input);
-            //System.out.println("Encrypted message: " + encryptedMessage);
-            //System.out.println("Decrypted message: " + DES.decodeMessage(encryptedMessage));
-        }
-        catch(NoSuchAlgorithmException | NoSuchPaddingException e)
-        {
-            System.out.print(e.getMessage());
-        }
-    }
-    
     public String decodeMessage(String message,SecretKey key) {
         String decryptedMessage = null;
         try
         {         
             desCipher.init(Cipher.DECRYPT_MODE, key);
             byte[] encryptedTextByte = decoder.decode(message);
-            byte[] someData = desCipher.update(encryptedTextByte);
-            byte[] decryptedByte = desCipher.doFinal();
+            byte[] decryptedByte = desCipher.doFinal(encryptedTextByte);
             String decryptedText = new String(decryptedByte);
             decryptedMessage = decryptedText;
         }
@@ -75,10 +50,8 @@ public class JEncryptDES {
         String encryptedText = null;
         try
         {
-            //desCipher.getClass()
             desCipher.init(Cipher.ENCRYPT_MODE, key);
-            byte[] someData = desCipher.update(message.getBytes());
-            byte[] encryptedMessage = desCipher.doFinal();
+            byte[] encryptedMessage = desCipher.doFinal(message.getBytes());
             encryptedText = encoder.encodeToString(encryptedMessage);
         }
         catch(InvalidKeyException | BadPaddingException | IllegalBlockSizeException e)
@@ -93,19 +66,5 @@ public class JEncryptDES {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(keySize);      
         return keyPairGenerator.genKeyPair();
-    }
-    
-    public static byte[] encode(PublicKey publicKey, String message) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA");  
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey);  
-
-        return cipher.doFinal(message.getBytes());  
-    }
-    
-    public static byte[] decode(PrivateKey privateKey, byte [] encryptedText) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA");  
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        
-        return cipher.doFinal(encryptedText);
     }
 }
