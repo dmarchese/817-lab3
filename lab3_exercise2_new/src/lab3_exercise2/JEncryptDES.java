@@ -32,7 +32,7 @@ public class JEncryptDES {
             instance = new JEncryptDES();
         }
       return instance;
-   }
+    }
     
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
@@ -57,7 +57,6 @@ public class JEncryptDES {
         String decryptedMessage = null;
         try
         {         
-            System.out.println("decode key: "+key);
             desCipher.init(Cipher.DECRYPT_MODE, key);
             byte[] encryptedTextByte = decoder.decode(message);
             byte[] someData = desCipher.update(encryptedTextByte);
@@ -77,7 +76,6 @@ public class JEncryptDES {
         try
         {
             //desCipher.getClass()
-            System.out.println("encode key: "+key);
             desCipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] someData = desCipher.update(message.getBytes());
             byte[] encryptedMessage = desCipher.doFinal();
