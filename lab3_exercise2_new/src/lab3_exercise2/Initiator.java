@@ -26,7 +26,6 @@ public class Initiator extends Thread // Client
     JEncryptDES DESCipher;
     JEncrypRSA RSACipher;
     
-    boolean run;
     Scanner chatMessageSC;
     
     Random nonce;
@@ -36,7 +35,6 @@ public class Initiator extends Thread // Client
         socket = this.setupSocket(host, port);
         DESCipher = JEncryptDES.getInstance();
         RSACipher = JEncrypRSA.getInstance();
-        run = true;
         nonce = new Random();
     }
     
@@ -103,12 +101,9 @@ public class Initiator extends Thread // Client
                 Ks = DESkeyGen.generateKey();
                 String encodedSecKey = Base64.getEncoder().encodeToString(Ks.getEncoded());
                 String priKeyEncoded = RSACipher.encodeWithPrivate(aKeys.getPrivate(), encodedSecKey);
-                //System.out.println("private key to send: "+priKeyEncoded);
 
                 String message4part1 = priKeyEncoded.substring(0, priKeyEncoded.length()/2);
                 String message4part2 = priKeyEncoded.substring(priKeyEncoded.length()/2);
-                //System.out.println("part1: " + message4part1);
-                //System.out.println("part2: " + message4part2);
                 String message4part1toSend = RSACipher.encode(pubKeyB, message4part1);
                 String message4part2toSend = RSACipher.encode(pubKeyB, message4part2);
                 writer.write(message4part1toSend);
@@ -149,7 +144,7 @@ public class Initiator extends Thread // Client
         this.publicKeyDistribution();
         
         Thread reciever = new Thread(() -> {
-            while(run)
+            while(true)
             {
                 try 
                 {   
@@ -162,7 +157,8 @@ public class Initiator extends Thread // Client
                     
                     long current = new Date().getTime();
                     if(current - timeStamp < 1000){
-                        System.out.println("Decoded Message: " + message);
+                        System.out.println("Ciphertext of message: " + recievedMessage);
+                        System.out.println("Decryption of message: " + message);
                     }
                 } 
                 catch (IOException e) 
@@ -174,7 +170,7 @@ public class Initiator extends Thread // Client
         reciever.start();
         
         Thread sender = new Thread(() -> {
-            while(run)
+            while(true)
             {
                 try 
                 {
