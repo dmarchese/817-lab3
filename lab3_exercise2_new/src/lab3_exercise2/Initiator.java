@@ -7,7 +7,6 @@ import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.*;
 import java.util.Scanner;
 import java.util.Base64;
-import java.util.Date;
 import java.util.Random;
 
 /**
@@ -55,48 +54,50 @@ public class Initiator extends Thread // Client
         // Initial Key distribution for A
         try
         {
-            //Step 1: Generate RSA key pair and send public key to B
+            // Step 1: Generate RSA key pair and send public key to B
             KeyPair aKeys = RSACipher.getKeyPair();
-            String encodedKey = Base64.getEncoder().encodeToString(aKeys.getPublic().getEncoded());
+            
+            PublicKey aPublicKey = aKeys.getPublic();
+            String encodedKey = Base64.getEncoder().encodeToString(aPublicKey.getEncoded());
             String initMessage = encodedKey;
             writer.write(initMessage);
             writer.newLine();
             writer.flush();
 
-            //Step 4: receive public key from B
+            // Step 4: receive public key from B
             String keyMessage = reader.readLine();
             byte[] decodedBKey = Base64.getDecoder().decode(keyMessage);
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decodedBKey);
             KeyFactory keyFact = KeyFactory.getInstance("RSA");
             PublicKey pubKeyB = keyFact.generatePublic(keySpec);
             
-            //Step 5: Send nonce and id to B
+            // Step 5: Send nonce and id to B
             int nonce1 = nonce.nextInt(9001) + 1;
             String idA = "A";
-            String message1 = idA+" "+nonce1;
+            String message1 = idA + " " + nonce1;
             String message1toSend = RSACipher.encode(pubKeyB, message1);
             writer.write(message1toSend);
             writer.newLine();
             writer.flush();
             
-            //Step 7: Receive message 2 from B
+            // Step 7: Receive message 2 from B
             String message2 = RSACipher.decode(aKeys.getPrivate(), reader.readLine());
-            //System.out.println("message2: "+message2);      
+            
             String[] message2Split = message2.split(" ");
             String nonceA = message2Split[0];
             String nonceB = message2Split[1];
-            //System.out.println("Received message #2 nonce A: "+nonceA+" nonce B: "+nonceB);
+            
             String initialNonce = Integer.toString(nonce1);
             if(initialNonce.equals(nonceA))
             {
-                //Step 8: send nonceB received from B back to B to ensure only communication between A and B
+                // Step 8: send nonceB received from B back to B to ensure only communication between A and B
                 String message3 = nonceB;
                 String message3toSend = RSACipher.encode(pubKeyB, message3);
                 writer.write(message3toSend);
                 writer.newLine();
                 writer.flush();
 
-                //Step 9: generate DES SecretKey and send to B
+                // Step 9: generate DES SecretKey and send to B
                 KeyGenerator DESkeyGen = KeyGenerator.getInstance("DES");
                 Ks = DESkeyGen.generateKey();
                 String encodedSecKey = Base64.getEncoder().encodeToString(Ks.getEncoded());
@@ -140,54 +141,14 @@ public class Initiator extends Thread // Client
             System.out.println("Error: "+ e.getLocalizedMessage());
         }
         
-        //Initial Key distribution for A
+        // Initial Key distribution for A
         this.publicKeyDistribution();
         
-        Thread reciever = new Thread(() -> {
-            while(true)
-            {
-                try 
-                {   
-                    String recievedMessage = reader.readLine();  
-                    String outMessage = DESCipher.decodeMessage(recievedMessage, Ks);
-                    
-                    String[] messageParts = outMessage.split("~");
-                    String message = messageParts[0];
-                    long timeStamp = Long.parseLong(messageParts[1]);
-                    
-                    long current = new Date().getTime();
-                    if(current - timeStamp < 1000){
-                        System.out.println("Ciphertext of message: " + recievedMessage);
-                        System.out.println("Decryption of message: " + message);
-                    }
-                } 
-                catch (IOException e) 
-                {
-                    System.out.println("Error: " + e);
-                }
-            }
-        });
-        reciever.start();
+        Reciever recieverA = new Reciever(reader, DESCipher, Ks);
+        recieverA.start();
         
-        Thread sender = new Thread(() -> {
-            while(true)
-            {
-                try 
-                {
-                    String message = chatMessageSC.nextLine();
-                    String messageWithTime = message + "~" + new Date().getTime();
-                    String finalMessage = DESCipher.encodeMessage(messageWithTime, Ks);
-                    writer.write(finalMessage);
-                    writer.newLine();
-                    writer.flush();
-                } 
-                catch (IOException e) 
-                {
-                    System.out.println("Error: " + e);
-                }
-            }
-        });
-        sender.start();
+        Sender senderA = new Sender(writer, DESCipher, Ks);
+        senderA.start();
     }
     public static void main(String[] args) throws NoSuchAlgorithmException, NoSuchPaddingException{
         Initiator i = new Initiator("localhost", 10104);

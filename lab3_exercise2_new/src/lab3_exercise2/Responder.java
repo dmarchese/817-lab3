@@ -7,7 +7,6 @@ import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.*;
 import java.util.Scanner;
 import java.util.Base64;
-import java.util.Date;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Random;
 
@@ -57,11 +56,11 @@ public class Responder extends Thread // server
     private void publicKeyDistribution(){
         try
         {
-            //Step 2: Receive public key from A
+            // Step 2: Receive public key from A
             String initMessage = reader.readLine();
             byte[] decodedAKey = Base64.getDecoder().decode(initMessage);
 
-            //Step 3: Generate RSA keypair and send public key to B
+            // Step 3: Generate RSA keypair and send public key to B
             KeyPair bKeys = RSACipher.getKeyPair();
             String encodedKey = Base64.getEncoder().encodeToString(bKeys.getPublic().getEncoded());
             writer.write(encodedKey);
@@ -72,13 +71,13 @@ public class Responder extends Thread // server
             KeyFactory keyFact = KeyFactory.getInstance("RSA");
             PublicKey pubKeyA = keyFact.generatePublic(keySpec);
 
-            //Step 6: receive A's id and nonce
+            // Step 6: receive A's id and nonce
             String message1 = reader.readLine();
             String message1decoded = RSACipher.decode(bKeys.getPrivate(), message1);               
             String[] message1Split = message1decoded.split(" ");
             String nonceA = message1Split[1];
 
-            //Step 7: generate B's nonce and send to A
+            // Step 7: generate B's nonce and send to A
             int nonceB = nonce.nextInt(9001) + 1;
             String message2 = nonceA + " " + nonceB;
             String message2toSend = RSACipher.encode(pubKeyA, message2);
@@ -86,12 +85,12 @@ public class Responder extends Thread // server
             writer.newLine();
             writer.flush();
 
-            //Step 8: receive nonceB from A and check if it equals nonceB
+            // Step 8: receive nonceB from A and check if it equals nonceB
             String message3 = RSACipher.decode(bKeys.getPrivate(), reader.readLine());
             
             if(Integer.toString(nonceB).equals(message3))
             {
-                //Step 10: receive message #4 and decrypt to get Ks
+                // Step 10: receive message #4 and decrypt to get Ks
                 String message4part1 = RSACipher.decode(bKeys.getPrivate(), reader.readLine());
                 String message4part2 = RSACipher.decode(bKeys.getPrivate(), reader.readLine());
                 String concat1 = message4part1 + message4part2;
@@ -114,7 +113,7 @@ public class Responder extends Thread // server
         }
     }
     
-    // this acts as B
+    // This acts as B
     @Override
     public void run() 
     {
@@ -134,51 +133,11 @@ public class Responder extends Thread // server
         
         this.publicKeyDistribution();
         
-        Thread reciever = new Thread(() -> {
-            while(true)
-            {
-                try 
-                {
-                    String recievedMessage = reader.readLine();  
-                    String outMessage = DESCipher.decodeMessage(recievedMessage, Ks);
-                    
-                    String[] messageParts = outMessage.split("~");
-                    String message = messageParts[0];
-                    long timeStamp = Long.parseLong(messageParts[1]);
-                    
-                    long current = new Date().getTime();
-                    if(current - timeStamp < 1000){
-                        System.out.println("Ciphertext of message: " + recievedMessage);
-                        System.out.println("Decryption of message: " + message);
-                    }
-                } 
-                catch (IOException e) 
-                {
-                    System.out.println("Error: " + e);
-                }
-            }
-        });
-        reciever.start();
+        Reciever recieverB = new Reciever(reader, DESCipher, Ks);
+        recieverB.start();
         
-        Thread sender = new Thread(() -> {
-            while(true)
-            {
-                try 
-                {
-                    String message = chatMessageSC.nextLine();
-                    String messageWithTime = message + "~" + new Date().getTime();
-                    String finalMessage = DESCipher.encodeMessage(messageWithTime, Ks);
-                    writer.write(finalMessage);
-                    writer.newLine();
-                    writer.flush();
-                } 
-                catch (IOException e) 
-                {
-                    System.out.println("Error: " + e);
-                }
-            }
-        });
-        sender.start();
+        Sender senderB = new Sender(writer, DESCipher, Ks);
+        senderB.start();
     }
     
     public static void main(String[] args) throws NoSuchAlgorithmException, NoSuchPaddingException{
